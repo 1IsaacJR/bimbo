@@ -90,9 +90,10 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
-    int64_t por_dormir;                 //threads slpees
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+
+    int64_t por_dormir;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
