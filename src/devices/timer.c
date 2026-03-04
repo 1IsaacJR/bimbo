@@ -19,6 +19,8 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
+//list of sleep_process
+static struct list dormidos;
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -92,8 +94,17 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  //Comment this line and use the thread block
+  //while (timer_elapsed (start) < ticks) 
+  //  thread_yield ();
+  enum intr_level old = intr_set_level(INTR_OFF);
+  struct thread* t = thread_current();
+  t->por_dormir = ticks;
+  list_push_back(&dormidos,&t->elem);
+  thread_block();
+  intr_set_level(old);
+  
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -170,6 +181,17 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  struct list_elem* e = list_begin(&dormidos);
+  while(e != list_end(&dormidos)){
+    struct thread* t = list_entry(e, struct thread,elem);
+    t->por_dormir--;
+    if(t->por_dormir <= 0){
+      e = list_remove(e);
+      thread_unblock(t);
+    }else{
+      e = list_next(e);
+    }
+  }
   ticks++;
   thread_tick ();
 }
